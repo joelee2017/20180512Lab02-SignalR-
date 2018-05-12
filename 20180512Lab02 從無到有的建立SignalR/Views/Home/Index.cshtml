@@ -1,31 +1,72 @@
-﻿@{
-    ViewBag.Title = "Home Page";
+﻿
+@{
+    ViewBag.Title = "Index";
 }
 
-<div class="jumbotron">
-    <h1>ASP.NET</h1>
-    <p class="lead">ASP.NET is a free web framework for building great Web sites and Web applications using HTML, CSS and JavaScript.</p>
-    <p><a href="https://asp.net" class="btn btn-primary btn-lg">Learn more &raquo;</a></p>
+<div id="connect">
+    <input type="text" id="txtUserName" value="" placeholder="請輸入名稱" autofocus="autofocus">
+    <input type="button" id="btnConnect" value="連線" />
 </div>
 
-<div class="row">
-    <div class="col-md-4">
-        <h2>Getting started</h2>
-        <p>
-            ASP.NET MVC gives you a powerful, patterns-based way to build dynamic websites that
-            enables a clean separation of concerns and gives you full control over markup
-            for enjoyable, agile development.
-        </p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301865">Learn more &raquo;</a></p>
-    </div>
-    <div class="col-md-4">
-        <h2>Get more libraries</h2>
-        <p>NuGet is a free Visual Studio extension that makes it easy to add, remove, and update libraries and tools in Visual Studio projects.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301866">Learn more &raquo;</a></p>
-    </div>
-    <div class="col-md-4">
-        <h2>Web Hosting</h2>
-        <p>You can easily find a web hosting company that offers the right mix of features and price for your applications.</p>
-        <p><a class="btn btn-default" href="https://go.microsoft.com/fwlink/?LinkId=301867">Learn more &raquo;</a></p>
-    </div>
+<div id="chatArea" style="visibility:hidden">
+    <div id="nickname"></div>
+    訊息：
+    <input type="text" id="txtMsg" autofocus="autofocus" />
+    <input type="button" id="send" value="Send" />
+    <ul id="result"></ul>
 </div>
+
+
+@section scripts{
+
+    <script src="~/Scripts/jquery.signalR-2.2.3.min.js"></script>
+    <script src="~/signalr/hubs"></script>
+    <script type="text/javascript">
+        $(function () {
+            //連結SignalR的Hub
+            var chat = $.connection.IM;
+
+            //按下登入的按鈕
+            $("#btnConnect").click(function () {
+                //取得用戶輸入的使用者名稱
+                var userName = $("#txtUserName").val();
+
+                //秀出用戶名稱
+                $("#nickname").text("用戶名稱 ： " + userName);
+                //隱藏Connect這一區的資料
+                $("#connect").css("display", "none");
+                //一開始訊息顯示區域是隱藏的，所以當連線SignalR後，要顯示訊息區域
+                $("#chatArea").css("visibility", "visible");
+                //清空文字輸入資料夾
+                $('#txtMsg').val('').focus();
+
+                //將連線打開
+                $.connection.hub.start().done(function () {
+                    //呼叫Server端的hello方法
+                    chat.server.hello();
+                });
+
+                $("#send").on("click", function () {
+                    chat.server.send($("#txtMsg").val());
+                });
+            });
+
+            $.connection.hub.disconnected(function () {
+                alert('喔YA!斷線了');
+            });
+
+            //建立讓Server可以叫用的方法。
+            chat.client.hello = function (e) {
+                var item = "<li>" + e.toString() + "</li>";
+                $('#result').prepend(item);
+            };
+
+            chat.client.receive = function (msg) {
+                $("#result").prepend("<li>" + msg + "</li>");
+            }
+
+        });
+
+    </script>
+
+}
